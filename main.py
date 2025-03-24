@@ -224,7 +224,7 @@ def fetch_glassdoor(keyword, location):
 # Routes
 @app.get("/")
 def home():
-    return {"Job Scraper"}
+    return {"Job Scraper Api"}
 
 @app.post("/linkedin_jobs")
 async def scrape_linkedin(job: JobRequest):
@@ -244,6 +244,7 @@ async def scrape_all_jobs(job: JobRequest):
         linkedin_results = linkedin.result()
         glassdoor_results = glassdoor.result()
     
+
     return {
         "linkedin": linkedin_results,
         "glassdoor": glassdoor_results
