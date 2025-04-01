@@ -5,6 +5,7 @@ import chromedriver_autoinstaller
 from scraper.linkedin import fetch_linkedin
 from scraper.glassdoor import fetch_glassdoor
 from scraper.scraper import scrape_all
+from scraper.internshala import fetch_internshala
 import concurrent.futures
 from functools import partial
 from models import JobRequest
@@ -39,6 +40,11 @@ async def scrape_linkedin(job: JobRequest):
 @app.post("/glassdoor_jobs")
 async def scrape_glassdoor(job: JobRequest):
     return fetch_glassdoor(job.keyword, job.location)
+
+
+@app.post("/internshala_jobs")
+async def scrape_internshala(job: JobRequest):
+    return fetch_internshala(job.keyword, job.location)
 
 @app.post("/scrape_jobs")
 async def scrape_all_jobs(job: JobRequest):

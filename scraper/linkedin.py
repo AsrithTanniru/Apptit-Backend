@@ -61,7 +61,8 @@ def fetch_linkedin(keyword, location):
                 "title": title.text.strip() if title else "N/A",
                 "company": company.text.strip() if company else "N/A",
                 "location": job_location.text.strip() if job_location else "N/A",
-                "link": link["href"] if link and link.has_attr("href") else "N/A"
+                "link": link["href"] if link and link.has_attr("href") else "N/A",
+                "platform":"Linkedin"
             }
             results.append(job_data)
         

@@ -123,6 +123,7 @@ def fetch_glassdoor(keyword, location):
                         "company": company,
                         "location": job_location,
                         "link": link,
+                        "platform":"Glassdoor"
                     }
                     
                     results.append(job_data)
