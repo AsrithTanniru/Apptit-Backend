@@ -1,5 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+__pycache__
+
 *.py[cod]
 *$py.class
 .pyc
@@ -56,3 +58,7 @@ media/
 # MacOS and system files
 .DS_Store
 Thumbs.db
+
+
+#env
+.env
