@@ -26,6 +26,10 @@ class UpdatePreferences(BaseModel):
     title: Optional[List[str]] = None
     location: Optional[List[str]] = None
 
+class JobPreferences(BaseModel):
+    title:List[str]
+    location:List[str]
+    
 class Jobs(Base):
     __tablename__ = "jobs"
 

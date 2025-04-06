@@ -3,8 +3,9 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import models
 from db import engine, get_db
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from models import Jobs, Users, JobRequest, GoogleAuthRequest, Preferences, PreferenceRequest,UpdatePreferences
+from models import Jobs, Users, JobRequest, GoogleAuthRequest, Preferences, PreferenceRequest,UpdatePreferences,JobPreferences
 import chromedriver_autoinstaller
 from scraper.linkedin import fetch_linkedin
 from scraper.glassdoor import fetch_glassdoor
@@ -26,7 +27,7 @@ app.add_middleware(
 )
 models.Base.metadata.create_all(bind=engine)
 
-# User Routes
+# MARK:User Routes
 @app.get("/")
 def home():
     return {"message": "Job Scraper API"}
@@ -57,8 +58,32 @@ async def get_users(db: Session = Depends(get_db)):
     users = db.query(Users).all()
     return users
 
+@app.get('/users/{user_id}/preferences')
+# async def get_user_preferences(user_id: int, db: Session = Depends(get_db)):
+#     prefs = db.query(Preferences).filter(Preferences.user_id == user_id).all()
+#     return prefs
+async def get_preferences(user_id: int, db: Session = Depends(get_db)):
+    try:
+        user = db.query(Users).filter(Users.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
+            
+        prefs = db.query(Preferences).filter(Preferences.user_id == user_id).all()
+        result = []
+        for pref in prefs:
+            result.append({
+                "id": pref.id,
+                "user_id": pref.user_id,
+                "title": pref.title.split(",") if "," in pref.title else [pref.title],
+                "location": pref.location.split(",") if "," in pref.location else [pref.location]
+            })
+            
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Error retrieving preferences: {str(e)}')
 
-#Preference Routes
+
+#MARK:Preference Routes
 
 
 # @app.post('/add-preferences')
@@ -132,36 +157,38 @@ async def update_preferences(update_pref: UpdatePreferences, db: Session = Depen
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f'Error updating preferences: {str(e)}')
+    
 
-
-
-@app.get('/users/{user_id}/preferences')
-# async def get_user_preferences(user_id: int, db: Session = Depends(get_db)):
-#     prefs = db.query(Preferences).filter(Preferences.user_id == user_id).all()
-#     return prefs
-async def get_preferences(user_id: int, db: Session = Depends(get_db)):
+@app.get('/jobs-user-preferences/{user_id}')
+async def get_jobs_by_pref(user_id: int, db: Session = Depends(get_db)):
     try:
         user = db.query(Users).filter(Users.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
-            
-        prefs = db.query(Preferences).filter(Preferences.user_id == user_id).all()
-        result = []
-        for pref in prefs:
-            result.append({
-                "id": pref.id,
-                "user_id": pref.user_id,
-                "title": pref.title.split(",") if "," in pref.title else [pref.title],
-                "location": pref.location.split(",") if "," in pref.location else [pref.location]
-            })
-            
-        return result
+
+        prefs = db.query(Preferences).filter(Preferences.user_id == user_id).first()
+        if not prefs:
+            raise HTTPException(status_code=404, detail="No preferences found for this user")
+
+        titles = prefs.title.split(",")
+        locations = prefs.location.split(",")
+
+        # Debug print
+        print("Searching jobs for:", titles, locations)
+
+        jobs = db.query(Jobs).filter(
+            or_(*[Jobs.title.ilike(f"%{t.strip()}%") for t in titles]),
+            or_(*[Jobs.location.ilike(f"%{l.strip()}%") for l in locations])
+        ).all()
+
+        return {"Jobs Based on your preferences":  jobs,
+                "Total Jobs": len(jobs)}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f'Error retrieving preferences: {str(e)}')
+        raise HTTPException(status_code=500, detail=f"Failed fetching jobs based on your preferences: {str(e)}")
 
 
-
-#  Scraper Routes
+#  MARK:Scraper Routes
 @app.post("/scrape_jobs")
 async def scrape_all_jobs(job_request: JobRequest, db: Session = Depends(get_db)):
     try:
@@ -252,7 +279,7 @@ async def scrape_internshala_jobs(job_request: JobRequest, db: Session = Depends
     
 
 
-#Filter Routes
+#MARK:Filter Routes
 @app.get("/jobs")
 async def get_jobs(db: Session = Depends(get_db)):
     jobs = db.query(Jobs).all()
@@ -267,3 +294,6 @@ async def get_searched_jobs(keyword: str, db: Session= Depends(get_db)):
     except:
         raise HTTPException(status_code=404, detail=f'The requested {keyword} job search did not find any results!')
     return jobs
+
+
+
