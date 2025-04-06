@@ -5,7 +5,7 @@ import models
 from db import engine, get_db
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from models import Jobs, Users, JobRequest, GoogleAuthRequest, Preferences, PreferenceRequest,UpdatePreferences,JobPreferences
+from models import Jobs, Users, JobRequest, GoogleAuthRequest, Preferences, PreferenceRequest,UpdatePreferences,JobPreferences,SavedJobs,SaveJobRequest
 import chromedriver_autoinstaller
 from scraper.linkedin import fetch_linkedin
 from scraper.glassdoor import fetch_glassdoor
@@ -294,6 +294,45 @@ async def get_searched_jobs(keyword: str, db: Session= Depends(get_db)):
     except:
         raise HTTPException(status_code=404, detail=f'The requested {keyword} job search did not find any results!')
     return jobs
+
+#MARK: Saved Jobs
+@app.post('/save-job')
+async def save_job(data: SaveJobRequest, db: Session = Depends(get_db)):
+    existing = db.query(SavedJobs).filter(
+        SavedJobs.user_id == data.user_id,
+        SavedJobs.job_id == data.job_id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Job already saved")
+
+    saved = SavedJobs(user_id=data.user_id, job_id=data.job_id)
+    db.add(saved)
+    db.commit()
+    db.refresh(saved)
+    return {"message": "Job saved successfully", "saved_job_id": saved.id}
+
+@app.get('/saved-jobs/{user_id}')
+async def get_saved_jobs(user_id: int, db: Session = Depends(get_db)):
+    saved = db.query(SavedJobs).filter(SavedJobs.user_id == user_id).all()
+    jobs = [s.job for s in saved]
+    return {"Saved Jobs": jobs}
+
+@app.delete('/unsave-job')
+async def unsave_job(data: SaveJobRequest, db: Session = Depends(get_db)):
+    saved = db.query(SavedJobs).filter(
+        SavedJobs.user_id == data.user_id,
+        SavedJobs.job_id == data.job_id
+    ).first()
+
+    if not saved:
+        raise HTTPException(status_code=404, detail="Saved job not found")
+
+    db.delete(saved)
+    db.commit()  # Make sure this is present!
+    return {"message": "Job unsaved successfully"}
+
+
+
 
 
 

@@ -1,7 +1,8 @@
 # models.py
+from datetime import datetime
 from pydantic import BaseModel
 from db import Base
-from sqlalchemy import Column, Integer, String, ForeignKey, ARRAY
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, ARRAY
 from sqlalchemy.orm import relationship
 from typing import List,Optional
 
@@ -29,7 +30,12 @@ class UpdatePreferences(BaseModel):
 class JobPreferences(BaseModel):
     title:List[str]
     location:List[str]
-    
+
+class SaveJobRequest(BaseModel):
+    user_id: int
+    job_id: int
+
+
 class Jobs(Base):
     __tablename__ = "jobs"
 
@@ -48,6 +54,9 @@ class Users(Base):
     email = Column(String, unique=True, nullable=False)
     picture = Column(String, nullable=True)
     preferences = relationship("Preferences", back_populates="user")
+    saved_jobs = relationship("SavedJobs", back_populates="user")
+
+
 
 class Preferences(Base):
     __tablename__ = 'preferences'
@@ -57,3 +66,13 @@ class Preferences(Base):
     title = Column(String, nullable=False)
     location = Column(String, nullable=False)
     user = relationship("Users", back_populates="preferences")
+
+class SavedJobs(Base):
+    __tablename__ = 'savedjobs'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    job_id = Column(Integer, ForeignKey('jobs.id'))
+    saved_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("Users", back_populates="saved_jobs")
+    job = relationship("Jobs")
