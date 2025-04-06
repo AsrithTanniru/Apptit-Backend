@@ -1,7 +1,9 @@
 # models.py
 from pydantic import BaseModel
 from db import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey, ARRAY
+from sqlalchemy.orm import relationship
+from typing import List,Optional
 
 class JobRequest(BaseModel):
     keyword: str
@@ -10,7 +12,20 @@ class JobRequest(BaseModel):
 class GoogleAuthRequest(BaseModel):
     name: str
     email: str
+
+class PreferenceRequest(BaseModel):
+    user_id: int
+    title: List[str]
+    location: List[str]
+
+class GetPreferences(BaseModel):
+    user_id: int
     
+class UpdatePreferences(BaseModel):
+    user_id: int
+    title: Optional[List[str]] = None
+    location: Optional[List[str]] = None
+
 class Jobs(Base):
     __tablename__ = "jobs"
 
@@ -28,3 +43,13 @@ class Users(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     picture = Column(String, nullable=True)
+    preferences = relationship("Preferences", back_populates="user")
+
+class Preferences(Base):
+    __tablename__ = 'preferences'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    title = Column(String, nullable=False)
+    location = Column(String, nullable=False)
+    user = relationship("Users", back_populates="preferences")
