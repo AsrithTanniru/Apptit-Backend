@@ -315,7 +315,7 @@ async def save_job(data: SaveJobRequest, db: Session = Depends(get_db)):
 async def get_saved_jobs(user_id: int, db: Session = Depends(get_db)):
     saved = db.query(SavedJobs).filter(SavedJobs.user_id == user_id).all()
     jobs = [s.job for s in saved]
-    return {"Saved Jobs": jobs}
+    return {"Saved Jobs": jobs, "Total Saved Jobs": len(jobs)}
 
 @app.delete('/unsave-job')
 async def unsave_job(data: SaveJobRequest, db: Session = Depends(get_db)):
@@ -328,7 +328,7 @@ async def unsave_job(data: SaveJobRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Saved job not found")
 
     db.delete(saved)
-    db.commit()  # Make sure this is present!
+    db.commit()
     return {"message": "Job unsaved successfully"}
 
 
