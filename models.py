@@ -2,7 +2,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 from db import Base
-from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, ARRAY
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, ARRAY,Text
 from sqlalchemy.orm import relationship
 from typing import List,Optional
 
@@ -55,6 +55,7 @@ class Users(Base):
     picture = Column(String, nullable=True)
     preferences = relationship("Preferences", back_populates="user")
     saved_jobs = relationship("SavedJobs", back_populates="user")
+    # applications = relationship("Applications", back_populates="user")
 
 
 
@@ -75,4 +76,17 @@ class SavedJobs(Base):
     saved_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("Users", back_populates="saved_jobs")
+    job = relationship("Jobs")
+
+class Applications(Base):
+    __tablename__ = 'applications'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    job_id = Column(Integer, ForeignKey('jobs.id'), nullable=False)
+    applied_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    status = Column(String, default="Applied", nullable=False)  
+    notes = Column(Text, nullable=True)
+    
+    user = relationship("Users", backref="applications")
     job = relationship("Jobs")
