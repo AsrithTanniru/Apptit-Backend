@@ -192,7 +192,18 @@ async def get_jobs_by_pref(user_id: int, db: Session = Depends(get_db)):
 @app.post("/scrape_jobs")
 async def scrape_all_jobs(job_request: JobRequest, db: Session = Depends(get_db)):
     try:
-
+        existing_jobs = db.query(Jobs).filter(
+            Jobs.title.ilike(f"%{job_request.keyword}%"),
+            Jobs.location.ilike(f"%{job_request.location}%")
+        ).all()
+        
+        if len(existing_jobs) >= 20:  
+            return {
+                "message": "Showing existing jobs from database",
+                "jobs": existing_jobs,
+                "count": len(existing_jobs)
+            }
+        
         jobs = scrape_all(job_request)
         
         db_jobs = []
@@ -208,11 +219,15 @@ async def scrape_all_jobs(job_request: JobRequest, db: Session = Depends(get_db)
             db_jobs.append(job)
         
         db.commit()
-        return db_jobs
+        return {
+            "message": "Fresh jobs scraped and added to database",
+            "jobs": db_jobs,
+            "count": len(db_jobs)
+        }
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error scraping jobs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing job request: {str(e)}")
 
 @app.post("/linkedin_jobs")
 async def scrape_linkedin_jobs(job_request: JobRequest, db: Session = Depends(get_db)):
