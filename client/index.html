@@ -33,6 +33,7 @@
             </svg>
         </div>
 
+        <div id="messagePanel" class="hidden max-w-xl mx-auto mb-4 p-3 rounded"></div>
         <div id="jobResults"></div>
     </div>
 
@@ -43,8 +44,11 @@
             const location = document.getElementById('location').value;
             const jobResults = document.getElementById('jobResults');
             const loadingSpinner = document.getElementById('loadingSpinner');
+            const messagePanel = document.getElementById('messagePanel');
 
             jobResults.innerHTML = '';
+            messagePanel.innerHTML = '';
+            messagePanel.classList.add('hidden');
             loadingSpinner.classList.remove('hidden');
 
             try {
@@ -54,18 +58,32 @@
                     body: JSON.stringify({ keyword, location })
                 });
                 
-                const data = JSON.parse(await response.text());
+                const data = await response.json();
                 loadingSpinner.classList.add('hidden');
                 
-                if (Array.isArray(data)) {
-                    // Add platform if not present (for backward compatibility)
+                if (data.message) {
+                    messagePanel.innerHTML = `
+                        <div class="${data.message.includes('existing') ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'} p-3 rounded">
+                            <strong>Info:</strong> ${data.message}
+                        </div>
+                    `;
+                    messagePanel.classList.remove('hidden');
+                }
+                
+                if (data.jobs && Array.isArray(data.jobs)) {
+                    const jobsWithPlatform = data.jobs.map(job => ({
+                        ...job,
+                        platform: job.platform || "Job Board"
+                    }));
+                    
+                    renderJobs(`Jobs Found (${data.count || jobsWithPlatform.length})`, jobsWithPlatform);
+                } else if (Array.isArray(data)) {
                     const jobsWithPlatform = data.map(job => ({
                         ...job,
                         platform: job.platform || "Job Board"
                     }));
                     renderJobs("Jobs Found", jobsWithPlatform);
                 } else if (data.linkedin || data.glassdoor || data.internshala) {
-                    // Handle structured data from different platforms
                     if (data.linkedin) {
                         const linkedinJobs = data.linkedin.map(job => ({
                             ...job,
@@ -89,17 +107,18 @@
                         }));
                         renderJobs("Internshala Jobs", internshalaJobs, true);
                     }
+                    // if no jobs
                 } else {
-                    // Single job with platform info
-                    renderJobs("Job Found", [{
-                        ...data,
-                        platform: data.platform || "Job Board"
-                    }]);
+                    jobResults.innerHTML = `
+                        <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 p-3 rounded max-w-xl mx-auto">
+                            <strong>No jobs found!</strong> Try changing your search criteria.
+                        </div>
+                    `;
                 }
             } catch (error) {
                 loadingSpinner.classList.add('hidden');
                 jobResults.innerHTML = `
-                    <div class="bg-red-100 border border-red-400 text-red-700 p-3 rounded">
+                    <div class="bg-red-100 border border-red-400 text-red-700 p-3 rounded max-w-xl mx-auto">
                         <strong>Error!</strong> Unable to fetch jobs. ${error.message}
                     </div>
                 `;
@@ -107,12 +126,15 @@
         });
 
         function renderJobs(title, jobs, addMargin = false) {
+            if (!jobs || jobs.length === 0) {
+                return;
+            }
+            
             const section = document.createElement('div');
             section.className = addMargin ? 'mt-6' : '';
             section.innerHTML = `<h2 class="text-xl font-bold mb-4 text-indigo-700">${title}</h2>`;
             
             jobs.forEach(job => {
-                // Create platform badge with different colors
                 const platformColors = {
                     'LinkedIn': 'bg-blue-100 text-blue-800',
                     'Glassdoor': 'bg-green-100 text-green-800',

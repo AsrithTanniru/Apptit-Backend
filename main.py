@@ -199,7 +199,7 @@ async def scrape_all_jobs(job_request: JobRequest, db: Session = Depends(get_db)
         
         if len(existing_jobs) >= 20:  
             return {
-                "message": "Showing existing jobs from database",
+                "message": "Existing jobs from database",
                 "jobs": existing_jobs,
                 "count": len(existing_jobs)
             }
@@ -220,7 +220,7 @@ async def scrape_all_jobs(job_request: JobRequest, db: Session = Depends(get_db)
         
         db.commit()
         return {
-            "message": "Fresh jobs scraped and added to database",
+            "message": " jobs scraped and added ",
             "jobs": db_jobs,
             "count": len(db_jobs)
         }
