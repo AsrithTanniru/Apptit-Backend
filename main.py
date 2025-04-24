@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import models
+import models 
 from db import engine, get_db
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -172,9 +172,7 @@ async def get_jobs_by_pref(user_id: int, db: Session = Depends(get_db)):
 
         titles = prefs.title.split(",")
         locations = prefs.location.split(",")
-
-        # Debug print
-        print("Searching jobs for:", titles, locations)
+        print("Searching jobs:", titles, locations)
 
         jobs = db.query(Jobs).filter(
             or_(*[Jobs.title.ilike(f"%{t.strip()}%") for t in titles]),
@@ -197,9 +195,9 @@ async def scrape_all_jobs(job_request: JobRequest, db: Session = Depends(get_db)
             Jobs.location.ilike(f"%{job_request.location}%")
         ).all()
         
-        if len(existing_jobs) >= 20:  
+        if len(existing_jobs) >= 200:  
             return {
-                "message": "Existing jobs from database",
+                "message": "Existing jobs available",
                 "jobs": existing_jobs,
                 "count": len(existing_jobs)
             }

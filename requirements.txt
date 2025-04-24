@@ -3,3 +3,6 @@ uvicorn
 selenium
 beautifulsoup4
 webdriver-manager
+sqlalchemy
+psycopg2
+chromedriver_autoinstaller
