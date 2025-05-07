@@ -6,3 +6,4 @@ webdriver-manager
 sqlalchemy
 psycopg2
 chromedriver_autoinstaller
+dotenv
